@@ -17,10 +17,12 @@
 #define CLOCK_POLARITY	1
 #define CLOCK_PHASE		1
 
+#define DW_WRITE_MASK	0x80
+
 static freertos_spi_if freertos_spi;
 
-static uint8_t transmit_buffer[3];
-static uint8_t receive_buffer[20];
+static uint8_t cmd_buffer[3];
+static uint8_t data_buffer[20];
 
 static freertos_spi_if prepare_spi_port(Spi *spi_base) {
 
@@ -64,6 +66,78 @@ static freertos_spi_if prepare_spi_port(Spi *spi_base) {
 	return spi_if;
 }
 
+static status_code_t send_command(freertos_spi_if spi, uint8_t *_cmd_buffer, uint32_t cmd_size, uint8_t *_data_buffer,
+		uint32_t data_size) {
+
+	status_code_t result = STATUS_OK;
+
+	spi_set_peripheral_chip_select_value(spi, (~(1U << CHIP_SELECT)));
+
+	// Send the command
+	if (freertos_spi_write_packet(spi, _cmd_buffer, cmd_size, SPI_MAX_BLOCK_TIME) == STATUS_OK) {
+		if (_cmd_buffer[0] & DW_WRITE_MASK) {
+			if (freertos_spi_write_packet(spi, _data_buffer, data_size, SPI_MAX_BLOCK_TIME) != STATUS_OK) {
+				result = STATUS_ERR_TIMEOUT;
+			}
+		} else {
+			if (freertos_spi_read_packet(spi, _data_buffer, data_size, SPI_MAX_BLOCK_TIME) != STATUS_OK) {
+				result = STATUS_ERR_TIMEOUT;
+			}
+		}
+	} else {
+		result = STATUS_ERR_TIMEOUT;
+	}
+
+	spi_set_peripheral_chip_select_value(spi, NONE_CHIP_SELECT_VALUE);
+	spi_set_lastxfer(spi);
+
+	return result;
+}
+
+static void dw_read_device_id(void) {
+	cmd_buffer[0] = 0x00;	// read device id
+
+	if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 4) == STATUS_OK) {
+		printf("DW DEVICE ID: %02X %02X %02X %02X\r\n", data_buffer[0], data_buffer[1], data_buffer[2], data_buffer[3]);
+	} else {
+		printf("SPI TIMEOUT\r\n");
+	}
+}
+
+static void dw_test_eui(void) {
+	cmd_buffer[0] = DW_WRITE_MASK | 0x01;	// WRITE EUI
+
+	data_buffer[0] = 0xAA;
+	data_buffer[1] = 0xBB;
+	data_buffer[2] = 0xCC;
+	data_buffer[3] = 0xDD;
+	data_buffer[4] = 0xEE;
+	data_buffer[5] = 0x88;
+	data_buffer[6] = 0x55;
+	data_buffer[7] = 0x22;
+
+	if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 8) == STATUS_OK) {
+		printf("DW WRITE EUI SUCCESS\r\n");
+		cmd_buffer[0] = 0x01;	// READ EUI
+		data_buffer[0] = 0x00;
+		data_buffer[1] = 0x00;
+		data_buffer[2] = 0x00;
+		data_buffer[3] = 0x00;
+		data_buffer[4] = 0x00;
+		data_buffer[5] = 0x00;
+		data_buffer[6] = 0x00;
+		data_buffer[7] = 0x00;
+		if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 8) == STATUS_OK) {
+			printf("DW EUI: %02X %02X %02X %02X %02X %02X %02X %02X\r\n", data_buffer[0], data_buffer[1], data_buffer[2],
+					data_buffer[3], data_buffer[4], data_buffer[5], data_buffer[6], data_buffer[7]);
+		} else {
+			printf("SPI TIMEOUT\r\n");
+		}
+	} else {
+		printf("SPI TIMEOUT\r\n");
+	}
+}
+
 portTASK_FUNCTION(task_decawave, pvParameters) {
 	UNUSED(pvParameters);
 
@@ -81,32 +155,13 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 	// enter polling loop
 	for (;;) {
 
-		// take a breath ...
 		vTaskDelay(DELAY_1S);
 
-		transmit_buffer[0] = 0x00;	// read device id
-		receive_buffer[0] = 0xAA;
-		receive_buffer[1] = 0xAA;	// init receive buffer
-		receive_buffer[2] = 0xAA;
-		receive_buffer[3] = 0xAA;
+		dw_read_device_id();
 
-		spi_set_peripheral_chip_select_value(SPI, (~(1U << CHIP_SELECT)));
+		vTaskDelay(DELAY_1S);
 
-		if (freertos_spi_write_packet(freertos_spi, transmit_buffer, 1, SPI_MAX_BLOCK_TIME) == STATUS_OK) {
-			// read the bytes
-			if (freertos_spi_read_packet(freertos_spi, receive_buffer, 4, SPI_MAX_BLOCK_TIME) == STATUS_OK) {
-				printf("SPI received data %02X %02X %02X %02X\r\n", receive_buffer[0], receive_buffer[1], receive_buffer[2], receive_buffer[3]);
-			} else {
-				printf("SPI RX timed out\r\n");
-			}
-		}
-		else {
-			printf("SPI TX timed out\r\n");
-		}
-
-		spi_set_peripheral_chip_select_value(SPI, NONE_CHIP_SELECT_VALUE);
-		spi_set_lastxfer(SPI);
-
+		dw_test_eui();
 	}
 
 }
