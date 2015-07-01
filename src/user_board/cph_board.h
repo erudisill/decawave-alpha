@@ -29,6 +29,22 @@
 #define cortexm4
 
 
+#define TASK_MONITOR_STACK_SIZE            (2048/sizeof(portSTACK_TYPE))
+#define TASK_MONITOR_STACK_PRIORITY        (tskIDLE_PRIORITY)
+
+#define TASK_LED_STACK_SIZE                (1024/sizeof(portSTACK_TYPE))
+#define TASK_LED_STACK_PRIORITY            (tskIDLE_PRIORITY)
+
+#define TASK_CLI_STACK_SIZE                (2048/sizeof(portSTACK_TYPE))
+#define TASK_CLI_STACK_PRIORITY            (tskIDLE_PRIORITY)
+
+#define TASK_DW_STACK_SIZE                 (2048/sizeof(portSTACK_TYPE))
+#define TASK_DW_STACK_PRIORITY             (tskIDLE_PRIORITY)
+
+#define DELAY_1S							(1000 / portTICK_PERIOD_MS)
+
+
+
 
 /*----------------------------------------------------------------------------*/
 /*	CONSOLE																	  */
@@ -46,10 +62,10 @@
 #define CONSOLE_UART        UART1
 #define CONSOLE_UART_ID     ID_UART1
 
-#define PINS_UART1_PIO 		PIOB
-#define PINS_UART1_TYPE 	PIO_PERIPH_A
-#define PINS_UART1_MASK 	PIO_PB2A_URXD1|PIO_PB3A_UTXD1
-#define PINS_UART1_ATTR 	PIO_DEFAULT
+#define PINS_CONSOLE_PIO 	PIOB
+#define PINS_CONSOLE_TYPE 	PIO_PERIPH_A
+#define PINS_CONSOLE_MASK 	PIO_PB2A_URXD1|PIO_PB3A_UTXD1
+#define PINS_CONSOLE_ATTR 	PIO_DEFAULT
 
 /*----------------------------------------------------------------------------*/
 /*	LEDS																	  */
@@ -62,6 +78,16 @@
 #define PINS_LED0_MASK		PIO_PC12
 #define PINS_LED0_ATTR		PIO_DEFAULT
 
+
+/*----------------------------------------------------------------------------*/
+/*	DECAWAVE																  */
+/*----------------------------------------------------------------------------*/
+
+#define DW_CS_IDX			PIO_PC9_IDX
+#define DW_CS_PIO			PIOC
+#define DW_CS_TYPE			PIO_OUTPUT_1
+#define DW_CS_MASK			PIO_PC9
+#define DW_CS_ATTR			PIO_DEFAULT
 
 
 

@@ -1,12 +1,7 @@
 #include <asf.h>
 #include "conf_board.h"
+#include "decawave.h"
 
-#define TASK_MONITOR_STACK_SIZE            (2048/sizeof(portSTACK_TYPE))
-#define TASK_MONITOR_STACK_PRIORITY        (tskIDLE_PRIORITY)
-#define TASK_LED_STACK_SIZE                (1024/sizeof(portSTACK_TYPE))
-#define TASK_LED_STACK_PRIORITY            (tskIDLE_PRIORITY)
-#define TASK_CLI_STACK_SIZE                (2048/sizeof(portSTACK_TYPE))
-#define TASK_CLI_STACK_PRIORITY            (tskIDLE_PRIORITY)
 
 static volatile bool bMonitorPaused = true;
 
@@ -38,7 +33,7 @@ static void task_monitor(void *pvParameters) {
 			vTaskList((signed portCHAR *) szList);
 			printf(szList);
 		}
-		vTaskDelay(1000);
+		vTaskDelay(DELAY_1S);
 	}
 }
 
@@ -46,7 +41,7 @@ static void task_led(void *pvParameters) {
 	UNUSED(pvParameters);
 	for (;;) {
 		pio_toggle_pin(LED_STATUS_IDX);
-		vTaskDelay(1000);
+		vTaskDelay(DELAY_1S);
 	}
 }
 
@@ -89,6 +84,11 @@ int main(void) {
 	/* Create task to make led blink */
 	if (xTaskCreate(task_led, "Led", TASK_LED_STACK_SIZE, NULL, TASK_LED_STACK_PRIORITY, NULL) != pdPASS) {
 		printf("Failed to create test led task\r\n");
+	}
+
+	/* Create task for Decawave */
+	if (xTaskCreate(task_decawave, "Decawave", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
+		printf("Failed to create Decawave task\r\n");
 	}
 
 	/* Create task for cheap CLI */

@@ -74,6 +74,7 @@
 
 // From module: Generic board support
 #include <board.h>
+#include <conf_board.h>
 
 // From module: Interrupt management - SAM implementation
 #include <interrupt.h>
@@ -103,5 +104,9 @@
 
 // From module: Standard serial I/O (stdio) - SAM implementation
 #include <stdio_serial.h>
+
+
+#include <freertos_spi_master.h>
+#include <spi.h>
 
 #endif // ASF_H
