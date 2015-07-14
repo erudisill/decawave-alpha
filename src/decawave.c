@@ -5,146 +5,491 @@
  *      Author: ericrudisill
  */
 
+#if 0
+
+
 #include <asf.h>
+#include <inttypes.h>
+#include <decawave.h>
 
-#define SPI_MAX_BLOCK_TIME 	(50 / portTICK_RATE_MS)
-#define CHIP_SELECT			1
-#define CHIP_SELECT_VALUE	0x0001
-#define NONE_CHIP_SELECT_VALUE     0x0f
-#define BAUD_RATE 		1000000
-#define DELAY_BEFORE	0x40
-#define DELAY_BETWEEN	0x10
-#define CLOCK_POLARITY	1
-#define CLOCK_PHASE		1
+#if 1
 
-#define DW_WRITE_MASK	0x80
+#define SOFTWARE_VER_STRING  "Version 0.01    "
 
-static freertos_spi_if freertos_spi;
+int is_tag = 0x00;
+int use_fast2wr = 0x00;
+int use_long_blink_delay = 0x00;
+int use_dr_mode = 0x02;  // Mode 3
+//uint8_t eui64[] = { 0xDE, 0xCA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+uint8_t eui64[] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x02, 0xCA, 0xDE };
 
-static uint8_t cmd_buffer[3];
-static uint8_t data_buffer[20];
 
-static freertos_spi_if prepare_spi_port(Spi *spi_base) {
+int instance_anchaddr = 0; //0 = 0xDECA020000000001; 1 = 0xDECA020000000002; 2 = 0xDECA020000000003
+int instance_mode = ANCHOR;
+//int instance_mode = TAG;
+//int instance_mode = TAG_TDOA;
+//int instance_mode = LISTENER;
+int dr_mode = 0;
 
-	freertos_spi_if spi_if;
+typedef struct
+{
+    uint8 channel ;
+    uint8 prf ;
+    uint8 datarate ;
+    uint8 preambleCode ;
+    uint8 preambleLength ;
+    uint8 pacSize ;
+    uint8 nsSFD ;
+    uint16 sfdTO ;
+} chConfig_t ;
 
-	const freertos_peripheral_options_t driver_options = {
-	/* No receive buffer pointer needed for SPI */
-	NULL,
 
-	/* No receive buffer size needed for SPI */
-	0,
+//Configuration for DecaRanging Modes (8 default use cases selectable by the switch S1 on EVK)
+chConfig_t chConfig[8] ={
+                    //mode 1 - S1: 7 off, 6 off, 5 off
+                    {
+                        2,              // channel
+                        DWT_PRF_16M,    // prf
+                        DWT_BR_110K,    // datarate
+                        3,             // preambleCode
+                        DWT_PLEN_1024,  // preambleLength
+                        DWT_PAC32,      // pacSize
+                        1,       // non-standard SFD
+                        (1025 + 64 - 32) //SFD timeout
+                    },
+                    //mode 2
+                    {
+                        2,              // channel
+                        DWT_PRF_16M,    // prf
+                        DWT_BR_6M8,    // datarate
+                        3,             // preambleCode
+                        DWT_PLEN_128,   // preambleLength
+                        DWT_PAC8,       // pacSize
+                        0,       // non-standard SFD
+                        (129 + 8 - 8) //SFD timeout
+                    },
+                    //mode 3
+                    {
+                        2,              // channel
+                        DWT_PRF_64M,    // prf
+                        DWT_BR_110K,    // datarate
+                        9,             // preambleCode
+                        DWT_PLEN_1024,  // preambleLength
+                        DWT_PAC32,      // pacSize
+                        1,       // non-standard SFD
+                        (1025 + 64 - 32) //SFD timeout
+                    },
+                    //mode 4
+                    {
+                        2,              // channel
+                        DWT_PRF_64M,    // prf
+                        DWT_BR_6M8,    // datarate
+                        9,             // preambleCode
+                        DWT_PLEN_128,   // preambleLength
+                        DWT_PAC8,       // pacSize
+                        0,       // non-standard SFD
+                        (129 + 8 - 8) //SFD timeout
+                    },
+                    //mode 5
+                    {
+                        5,              // channel
+                        DWT_PRF_16M,    // prf
+                        DWT_BR_110K,    // datarate
+                        3,             // preambleCode
+                        DWT_PLEN_1024,  // preambleLength
+                        DWT_PAC32,      // pacSize
+                        1,       // non-standard SFD
+                        (1025 + 64 - 32) //SFD timeout
+                    },
+                    //mode 6
+                    {
+                        5,              // channel
+                        DWT_PRF_16M,    // prf
+                        DWT_BR_6M8,    // datarate
+                        3,             // preambleCode
+                        DWT_PLEN_128,   // preambleLength
+                        DWT_PAC8,       // pacSize
+                        0,       // non-standard SFD
+                        (129 + 8 - 8) //SFD timeout
+                    },
+                    //mode 7
+                    {
+                        5,              // channel
+                        DWT_PRF_64M,    // prf
+                        DWT_BR_110K,    // datarate
+                        9,             // preambleCode
+                        DWT_PLEN_1024,  // preambleLength
+                        DWT_PAC32,      // pacSize
+                        1,       // non-standard SFD
+                        (1025 + 64 - 32) //SFD timeout
+                    },
+                    //mode 8
+                    {
+                        5,              // channel
+                        DWT_PRF_64M,    // prf
+                        DWT_BR_6M8,    // datarate
+                        9,             // preambleCode
+                        DWT_PLEN_128,   // preambleLength
+                        DWT_PAC8,       // pacSize
+                        0,       // non-standard SFD
+                        (129 + 8 - 8) //SFD timeout
+                    }
+};
 
-	/* Cortex-M4 priority */
-	configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY,
+#if (DR_DISCOVERY == 0)
+//Tag address list
+uint64 tagAddressList[3] =
+{
+     0xDECA010000001001,         // First tag
+     0xDECA010000000002,         // Second tag
+     0xDECA010000000003          // Third tag
+} ;
 
-	/* Operation mode - MASTER */
-	SPI_MASTER,
+//Anchor address list
+uint64 anchorAddressList[ANCHOR_LIST_SIZE] =
+{
+     0xDECA020000000001 ,       // First anchor
+     0xDECA020000000002 ,       // Second anchor
+     0xDECA020000000003 ,       // Third anchor
+     0xDECA020000000004         // Fourth anchor
+} ;
 
-	/* Blocking (not async) */
-	(USE_TX_ACCESS_MUTEX | USE_RX_ACCESS_MUTEX | WAIT_TX_COMPLETE | WAIT_RX_COMPLETE) };
+//ToF Report Forwarding Address
+uint64 forwardingAddress[1] =
+{
+     0xDECA030000000001
+} ;
 
-	spi_if = freertos_spi_master_init(spi_base, &driver_options);
 
-	if (spi_if != NULL) {
-		pio_configure_pin(PIO_PA12_IDX, PIO_PERIPH_A);	// MISO
-		pio_configure_pin(PIO_PA13_IDX, PIO_PERIPH_A);	// MOSI
-		pio_configure_pin(PIO_PA14_IDX, PIO_PERIPH_A);	// SPCK
-		pio_configure_pin(PIO_PC4_IDX, PIO_PERIPH_B);	// NPCS1
-		pmc_enable_periph_clk(ID_SPI);
+// ======================================================
+//
+//  Configure instance tag/anchor/etc... addresses
+//
+void addressconfigure(void)
+{
+    instanceAddressConfig_t ipc ;
 
-		spi_disable(spi_base);
-		spi_set_clock_polarity(spi_base, CHIP_SELECT, CLOCK_POLARITY);
-		spi_set_clock_phase(spi_base, CHIP_SELECT, CLOCK_PHASE);
-		spi_set_baudrate_div(spi_base, CHIP_SELECT, (sysclk_get_cpu_hz() / BAUD_RATE));
-		spi_set_transfer_delay(spi_base, CHIP_SELECT, DELAY_BEFORE, DELAY_BETWEEN);
-		spi_configure_cs_behavior(spi_base, CHIP_SELECT, SPI_CS_KEEP_LOW);
-		spi_set_peripheral_chip_select_value(spi_base, CHIP_SELECT_VALUE);
-		spi_enable(spi_base);
-	}
+    ipc.forwardToFRAddress = forwardingAddress[0];
+    ipc.anchorAddress = anchorAddressList[instance_anchaddr];
+    ipc.anchorAddressList = anchorAddressList;
+    ipc.anchorListSize = ANCHOR_LIST_SIZE ;
+    ipc.anchorPollMask = 0x1; //0x7;              // anchor poll mask
 
-	return spi_if;
+    ipc.sendReport = 1 ;  //1 => anchor sends TOF report to tag
+    //ipc.sendReport = 2 ;  //2 => anchor sends TOF report to listener
+
+    instancesetaddresses(&ipc);
+}
+#endif
+
+int decarangingmode(void)
+{
+	return use_dr_mode;
 }
 
-static status_code_t send_command(freertos_spi_if spi, uint8_t *_cmd_buffer, uint32_t cmd_size, uint8_t *_data_buffer,
-		uint32_t data_size) {
+uint32 inittestapplication(void)
+{
+    uint32 devID ;
+    instanceConfig_t instConfig;
+    int i , result;
 
-	status_code_t result = STATUS_OK;
+    SPI_ConfigFastRate(SPI_BaudRatePrescaler_16);  //max SPI before PLLs configured is ~4M
 
-	spi_set_peripheral_chip_select_value(spi, (~(1U << CHIP_SELECT)));
+    i = 10;
 
-	// Send the command
-	if (freertos_spi_write_packet(spi, _cmd_buffer, cmd_size, SPI_MAX_BLOCK_TIME) == STATUS_OK) {
-		if (_cmd_buffer[0] & DW_WRITE_MASK) {
-			if (freertos_spi_write_packet(spi, _data_buffer, data_size, SPI_MAX_BLOCK_TIME) != STATUS_OK) {
-				result = STATUS_ERR_TIMEOUT;
-			}
-		} else {
-			if (freertos_spi_read_packet(spi, _data_buffer, data_size, SPI_MAX_BLOCK_TIME) != STATUS_OK) {
-				result = STATUS_ERR_TIMEOUT;
-			}
-		}
-	} else {
-		result = STATUS_ERR_TIMEOUT;
-	}
+    //this is called here to wake up the device (i.e. if it was in sleep mode before the restart)
+    devID = instancereaddeviceid() ;
+    printf("devID %08X\r\n", devID);
+    if(DWT_DEVICE_ID != devID) //if the read of devide ID fails, the DW1000 could be asleep
+    {
+        port_SPIx_clear_chip_select();  //CS low
+        Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
+        port_SPIx_set_chip_select();  //CS high
+        Sleep(7);
+        devID = instancereaddeviceid() ;
+        // SPI not working or Unsupported Device ID
+        if(DWT_DEVICE_ID != devID) {
+        	return(-1) ;
+        }
+        //clear the sleep bit - so that after the hard reset below the DW does not go into sleep
+        dwt_softreset();
+    }
 
-	spi_set_peripheral_chip_select_value(spi, NONE_CHIP_SELECT_VALUE);
-	spi_set_lastxfer(spi);
+    //reset the DW1000 by driving the RSTn line low
+    reset_DW1000();
 
-	return result;
+    result = instance_init() ;
+    if (0 > result) return(-2) ; // Some failure has occurred
+
+    SPI_ConfigFastRate(SPI_BaudRatePrescaler_4); //increase SPI to max
+    devID = instancereaddeviceid() ;
+
+    if (DWT_DEVICE_ID != devID)   // Means it is NOT MP device
+    {
+        // SPI not working or Unsupported Device ID
+        return(-3) ;
+    }
+
+    if(is_tag)
+    {
+        instance_mode = TAG;
+        led_on(LED_PC7);
+    }
+    else
+    {
+        instance_mode = ANCHOR;
+#if (DR_DISCOVERY == 1)
+        led_on(LED_PC6);
+#else
+        if(instance_anchaddr & 0x1)
+            led_on(LED_PC6);
+
+        if(instance_anchaddr & 0x2)
+            led_on(LED_PC7);
+#endif
+    }
+
+    instancesetrole(instance_mode) ;     // Set this instance role
+
+    if(use_fast2wr) //if fast ranging then initialise instance for fast ranging application
+    {
+        instance_init_f(instance_mode); //initialise Fast 2WR specific data
+        //when using fast ranging the channel config is either mode 2 or mode 6
+        //default is mode 2
+        dr_mode = decarangingmode();
+
+        if((dr_mode & 0x1) == 0)
+            dr_mode = 1;
+    }
+    else
+    {
+        instance_init_s(instance_mode);
+        dr_mode = decarangingmode();
+    }
+
+    instConfig.channelNumber = chConfig[dr_mode].channel ;
+    instConfig.preambleCode = chConfig[dr_mode].preambleCode ;
+    instConfig.pulseRepFreq = chConfig[dr_mode].prf ;
+    instConfig.pacSize = chConfig[dr_mode].pacSize ;
+    instConfig.nsSFD = chConfig[dr_mode].nsSFD ;
+    instConfig.sfdTO = chConfig[dr_mode].sfdTO ;
+    instConfig.dataRate = chConfig[dr_mode].datarate ;
+    instConfig.preambleLen = chConfig[dr_mode].preambleLength ;
+
+    instance_config(&instConfig) ;                  // Set operating channel etc
+
+#if (DR_DISCOVERY == 0)
+    addressconfigure() ;                            // set up initial payload configuration
+#endif
+    instancesettagsleepdelay(POLL_SLEEP_DELAY, BLINK_SLEEP_DELAY); //set the Tag sleep time
+
+    //if TA_SW1_2 is on use fast ranging (fast 2wr)
+    if(use_fast2wr)
+    {
+        //Fast 2WR specific config
+        //configure the delays/timeouts
+        instance_config_f();
+    }
+    else //use default ranging modes
+    {
+        // NOTE: this is the delay between receiving the blink and sending the ranging init message
+        // The anchor ranging init response delay has to match the delay the tag expects
+        // the tag will then use the ranging response delay as specified in the ranging init message
+        // use this to set the long blink response delay (e.g. when ranging with a PC anchor that wants to use the long response times != 150ms)
+        if(use_long_blink_delay)
+        {
+            instancesetblinkreplydelay(FIXED_LONG_BLINK_RESPONSE_DELAY);
+        }
+        else //this is for ARM to ARM tag/anchor (using normal response times 150ms)
+        {
+            instancesetblinkreplydelay(FIXED_REPLY_DELAY);
+        }
+
+        //set the default response delays
+        instancesetreplydelay(FIXED_REPLY_DELAY, 0);
+    }
+
+//    return devID;
+    return 0;
 }
 
-static void dw_read_device_id(void) {
-	cmd_buffer[0] = 0x00;	// read device id
 
-	if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 4) == STATUS_OK) {
-		printf("DW DEVICE ID: %02X %02X %02X %02X\r\n", data_buffer[0], data_buffer[1], data_buffer[2], data_buffer[3]);
-	} else {
-		printf("SPI TIMEOUT\r\n");
-	}
+void process_deca_irq(uint32_t id, uint32_t mask) {
+	do {
+		instance_process_irq(0);
+	} while (port_CheckEXT_IRQ() == 1);
 }
 
-static void dw_test_eui(void) {
-	cmd_buffer[0] = DW_WRITE_MASK | 0x01;	// WRITE EUI
-
-	data_buffer[0] = 0xAA;
-	data_buffer[1] = 0xBB;
-	data_buffer[2] = 0xCC;
-	data_buffer[3] = 0xDD;
-	data_buffer[4] = 0xEE;
-	data_buffer[5] = 0x88;
-	data_buffer[6] = 0x55;
-	data_buffer[7] = 0x22;
-
-	if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 8) == STATUS_OK) {
-		printf("DW WRITE EUI SUCCESS\r\n");
-		cmd_buffer[0] = 0x01;	// READ EUI
-		data_buffer[0] = 0x00;
-		data_buffer[1] = 0x00;
-		data_buffer[2] = 0x00;
-		data_buffer[3] = 0x00;
-		data_buffer[4] = 0x00;
-		data_buffer[5] = 0x00;
-		data_buffer[6] = 0x00;
-		data_buffer[7] = 0x00;
-		if (send_command(freertos_spi, cmd_buffer, 1, data_buffer, 8) == STATUS_OK) {
-			printf("DW EUI: %02X %02X %02X %02X %02X %02X %02X %02X\r\n", data_buffer[0], data_buffer[1], data_buffer[2],
-					data_buffer[3], data_buffer[4], data_buffer[5], data_buffer[6], data_buffer[7]);
-		} else {
-			printf("SPI TIMEOUT\r\n");
-		}
-	} else {
-		printf("SPI TIMEOUT\r\n");
-	}
+void process_dwRSTn_irq(uint32_t id, uint32_t mask) {
+	instance_notify_DW1000_inIDLE(1);
 }
 
 portTASK_FUNCTION(task_decawave, pvParameters) {
 	UNUSED(pvParameters);
 
-	// prepare spi port
-	freertos_spi = prepare_spi_port(SPI);
+	int i = 0;
+	int toggle = 1;
+	int ranging = 0;
+	uint8 dataseq[40];
+	double range_result = 0;
+	double avg_result = 0;
+	uint8 dataseq1[40];
+	uint8 command = 0x0;
 
-	if (freertos_spi != NULL) {
+	led_off(LED_ALL); //turn off all the LEDs
+
+	peripherals_init();
+
+	spi_peripheral_init();
+
+	Sleep(1000); //wait for LCD to power on
+
+	printf("DECAWAVE        \r\n");
+	printf(SOFTWARE_VER_STRING);
+	printf("\r\n");
+
+	Sleep(1000);
+
+	port_DisableEXT_IRQ(); //disable ScenSor IRQ until we configure the device
+
+
+	printf("DECAWAVE  RANGE\r\n");
+
+	led_off(LED_ALL);
+
+	int testresult = inittestapplication();
+	if (testresult < 0) {
+		led_on(LED_ALL); //to display error....
+		printf("ERROR\r\n");
+		printf("INIT FAIL %d\r\n", testresult);
+		for (;;) {
+		}
+	}
+
+	//sleep for 5 seconds displaying "Decawave"
+	i = 30;
+	while (i--) {
+		if (i & 1)
+			led_off(LED_ALL);
+		else
+			led_on(LED_ALL);
+
+		Sleep(200);
+	}
+	i = 0;
+	led_off(LED_ALL);
+
+	if (is_tag) {
+		instance_mode = TAG;
+		printf("TAG\r\n");
+	} else {
+		instance_mode = ANCHOR;
+		printf("ANCHOR\r\n");
+#if (DR_DISCOVERY == 1)
+		printf("DR_DISCOVER == 1\r\n");
+#else
+		printf("DR_DISCOVER == 0\r\n");
+#endif
+	}
+
+	if (instance_mode == TAG) {
+		//if TA_SW1_2 is on use fast ranging (fast 2wr)
+		if (use_fast2wr) {
+			printf("Fast Tag Ranging\r\n");
+		} else {
+			printf("TAG BLINK %llX\r\n", instance_get_addr());
+		}
+	} else {
+		printf("AWAITING POLL\r\n");
+	}
+
+	port_EnableEXT_IRQ()
+	; //enable ScenSor IRQ before starting
+
+	// main loop
+	while (1) {
+		instance_run();
+
+		if (instancenewrange()) {
+			ranging = 1;
+			//send the new range information to LCD and/or USB
+			range_result = instance_get_idist();
+#if (DR_DISCOVERY == 0)
+			if(instance_mode == ANCHOR)
+#endif
+			avg_result = instance_get_adist();
+			//set_rangeresult(range_result);
+
+			printf("LAST: %4.2f m   ");
+#if (DR_DISCOVERY == 0)
+			if(instance_mode == ANCHOR)
+			printf("AVG8: %4.2 m", avg_result);
+			else
+			printf("%llx", instance_get_anchaddr());
+#else
+			printf("AVG8: %4.2 m", avg_result);
+#endif
+		}
+
+		if (ranging == 0) {
+			if (instance_mode != ANCHOR) {
+				if (instancesleeping()) {
+					if (toggle) {
+						printf("AWAITING RESPONSE\r\n");
+					} else {
+						toggle = 1;
+						printf("TAG BLINK %llX\r\n", instance_get_addr());
+					}
+				}
+
+				if (instanceanchorwaiting() == 2) {
+					ranging = 1;
+					printf("RANGING WITH %016llX\r\n", instance_get_anchaddr());
+				}
+			} else {
+				if (instanceanchorwaiting()) {
+					toggle += 2;
+
+					if (toggle > 300000) {
+						if (toggle & 0x1) {
+							toggle = 0;
+							printf("AWAITING POLL\r\n");
+						} else {
+							toggle = 1;
+#if (DR_DISCOVERY == 1)
+							printf("DISCOVERY MODE ");
+#else
+							printf("NON DISCOVERY ");
+#endif
+							printf("%llX\r\n", instance_get_addr());
+						}
+					}
+
+				} else if (instanceanchorwaiting() == 2) {
+					printf("RANGING WITH %llX", instance_get_tagaddr());
+				}
+			}
+		}
+	}
+}
+#endif
+
+
+#if 0
+static freertos_spi_if spi;
+uint8_t eui64[] = { 0xDE, 0xCA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+void process_deca_irq(uint32_t id, uint32_t mask) {
+}
+
+void process_dwRSTn_irq(uint32_t id, uint32_t mask) {
+}
+portTASK_FUNCTION(task_decawave, pvParameters) {
+	UNUSED(pvParameters);
+
+	peripherals_init();
+	spi = spi_peripheral_init();
+
+	if (spi != NULL) {
 		printf("FreeRTOS SPI master init success.\r\n");
 	} else {
 		printf("FreeRTOS SPI master init ERROR.\r\n");
@@ -152,16 +497,39 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 		}
 	}
 
+	Sleep(1000);
+
+	// initialize DW
+	if (dwt_initialise(DWT_LOADNONE) == DWT_SUCCESS) {
+		printf("dwt_initialize success.\r\n");
+	} else {
+		printf("dwt_initialize ERROR.\r\n");
+		for (;;) {
+		}
+	}
+
+	// get eui64
+	dwt_seteui(eui64);
+	Sleep(1);
+	dwt_geteui(eui64);
+	printf("eui: ");
+	printf("%02X ", eui64[0]);
+	printf("%02X ", eui64[1]);
+	printf("%02X ", eui64[2]);
+	printf("%02X ", eui64[3]);
+	printf("%02X ", eui64[4]);
+	printf("%02X ", eui64[5]);
+	printf("%02X ", eui64[6]);
+	printf("%02X ", eui64[7]);
+	printf("\r\n");
+
 	// enter polling loop
 	for (;;) {
 
-		vTaskDelay(DELAY_1S);
-
-		dw_read_device_id();
-
-		vTaskDelay(DELAY_1S);
-
-		dw_test_eui();
 	}
-
 }
+#endif
+
+
+
+#endif

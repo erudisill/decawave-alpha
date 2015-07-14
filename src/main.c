@@ -40,7 +40,7 @@ static void task_monitor(void *pvParameters) {
 static void task_led(void *pvParameters) {
 	UNUSED(pvParameters);
 	for (;;) {
-		pio_toggle_pin(LED_STATUS_IDX);
+		pio_toggle_pin(LED_STATUS0_IDX);
 		vTaskDelay(DELAY_1S);
 	}
 }
@@ -71,7 +71,7 @@ int main(void) {
 	configure_console();
 
 	/* Output demo infomation. */
-	printf("-- Freertos Example --\n\r");
+	printf("\r\n-- Decawave Tests --\n\r");
 	printf("-- %s\n\r", BOARD_NAME);
 	printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 	printf("-- Press M to toggle Task Monitor\r\n");
@@ -87,8 +87,13 @@ int main(void) {
 	}
 
 	/* Create task for Decawave */
-	if (xTaskCreate(task_decawave, "Decawave", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
-		printf("Failed to create Decawave task\r\n");
+//	if (xTaskCreate(task_decawave, "Decawave", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
+//		printf("Failed to create Decawave task\r\n");
+//	}
+
+	/* Create task for Decawave Tests */
+	if (xTaskCreate(task_decawave_tests, "DW TESTS", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
+		printf("Failed to create DW TESTS task\r\n");
 	}
 
 	/* Create task for cheap CLI */

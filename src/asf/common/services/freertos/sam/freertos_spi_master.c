@@ -420,7 +420,7 @@ status_code_t freertos_spi_read_packet_async(freertos_spi_if p_spi,
 		if (return_value == STATUS_OK) {
 			/* Data must be sent for data to be received.  Set the receive
 			buffer to all 0xffs so it can also be used as the send buffer. */
-			memset((void *)data, 0xff, (size_t)len);
+			//ERIC: memset((void *)data, 0xff, (size_t)len);
 
 			/* Ensure Rx is already empty. */
 			while(spi_is_rx_full(all_spi_definitions[spi_index].peripheral_base_address) != 0) {
