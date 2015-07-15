@@ -5,6 +5,8 @@
  *      Author: ericrudisill
  */
 
+#if 1
+
 #include <asf.h>
 #include <string.h>
 #include <inttypes.h>
@@ -196,8 +198,8 @@ static uint8_t init_dw(void) {
 	reset_DW1000();
 	printf("done\r\n");
 
-//	result = dwt_initialise(DWT_LOADUCODE | DWT_LOADLDO | DWT_LOADTXCONFIG | DWT_LOADANTDLY | DWT_LOADXTALTRIM);
-	result = dwt_initialise(0);
+	result = dwt_initialise(DWT_LOADUCODE | DWT_LOADLDO | DWT_LOADTXCONFIG | DWT_LOADANTDLY | DWT_LOADXTALTRIM);
+//	result = dwt_initialise(0);
 	if (result == DWT_ERROR) {
 		printf("dwt_initialise error\r\n");
 		for (;;) {
@@ -217,23 +219,6 @@ static uint8_t init_dw(void) {
     // Set operating channel etc
     instance_config(&instConfig) ;
     printf("done\r\n");
-
-//	printf("configuring dw...");
-//	config.chan = chConfig[dr_mode].channel;
-//	config.rxCode = chConfig[dr_mode].preambleCode;
-//	config.txCode = chConfig[dr_mode].preambleCode;
-//	config.prf = chConfig[dr_mode].prf;
-//	config.dataRate = chConfig[dr_mode].datarate;
-//	config.txPreambLength = chConfig[dr_mode].preambleLength;
-//	config.rxPAC = chConfig[dr_mode].pacSize;
-//	config.nsSFD = chConfig[dr_mode].nsSFD;
-//	config.phrMode = DWT_PHRMODE_STD;
-//	config.sfdTO = chConfig[dr_mode].sfdTO;
-//	config.smartPowerEn = 0;
-//	dwt_configure(&config, DWT_LOADNONE);
-//	printf("done\r\n");
-
-//    dwt_writetodevice(FS_CTRL_ID, FS_PLLCFG_OFFSET, 5, &pll_cfg[0]);
 
 	dwt_enableframefilter(DWT_FF_NOTYPE_EN); //disable frame filtering
 	dwt_seteui(eui64);
@@ -376,12 +361,12 @@ portTASK_FUNCTION(task_decawave_tests, pvParameters) {
 
 //	dwt_xtaltrim(0x1f);
 //
-//	if (dwt_rxenable(0) == DWT_ERROR) {
-//		printf("dwt_rxenable error\r\n");
-//	}
+	if (dwt_rxenable(0) == DWT_ERROR) {
+		printf("dwt_rxenable error\r\n");
+	}
 
 
-//	SPI_ConfigFastRate(DW_SPI_BAUD_FAST);
+	SPI_ConfigFastRate(DW_SPI_BAUD_FAST);
 
 	for (;;) {
 
@@ -401,12 +386,15 @@ portTASK_FUNCTION(task_decawave_tests, pvParameters) {
 		status = dwt_read32bitreg(SYS_STATUS_ID);
 		status1 = dwt_read32bitoffsetreg(SYS_STATUS_ID, 1);            // read status register
 		dwt_readfromdevice(RX_BUFFER_ID, 0, 2, buffer);
-		printf("MAIN status %02X%08X, byte 0 %02X%02X\r\n", status1 >> 24, status, buffer[0], buffer[1]);
+		printf("MAIN status %02X %08X, byte 0 %02X%02X\r\n", status1 >> 24, status, buffer[0], buffer[1]);
 
 		memset(buffer, 0xaa, FS_CTRL_LEN);
 		dwt_readfromdevice(FS_CTRL_ID, 0, FS_CTRL_LEN, buffer);
 		printf("FS_PLLCFG %08X  FS_PLLTUNE %02X  FS_XTALT %02X\r\n", *((uint32_t*) &buffer[0x07]), (uint8_t) (buffer[0x0b]),
 				(uint8_t) (buffer[0x0e]));
+
+		status = dwt_read32bitoffsetreg(RF_CONF_ID, RF_STATUS_OFFSET);
+		printf("RF_STATUS %08X\r\n", status);
 
 //	    printf("FS_CTRL ");
 //	    for (int i=0;i<FS_CTRL_LEN;i++) {
@@ -416,4 +404,7 @@ portTASK_FUNCTION(task_decawave_tests, pvParameters) {
 	}
 
 }
+#endif
+
+
 #endif

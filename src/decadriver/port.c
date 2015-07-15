@@ -275,7 +275,7 @@ int readfromspi_serial(uint16_t headerLength, const uint8_t *headerBuffer, uint3
 	status_code_t result = STATUS_OK;
 
 	memcpy(spi_buffer, headerBuffer, headerLength);
-	memcpy(&spi_buffer[headerLength], readBuffer, readlength);
+	memset(&spi_buffer[headerLength],0xff,readlength);
 
 	spi_set_peripheral_chip_select_value(DW_SPI, (~(1U << DW_CHIP_SELECT)));
 
