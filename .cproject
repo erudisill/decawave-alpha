@@ -233,4 +233,5 @@
 			<resource resourceType="PROJECT" workspacePath="/asf-freertos-template"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

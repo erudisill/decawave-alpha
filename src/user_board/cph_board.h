@@ -36,7 +36,8 @@
 #define TASK_CLI_STACK_SIZE                (2048/sizeof(portSTACK_TYPE))
 #define TASK_CLI_STACK_PRIORITY            (tskIDLE_PRIORITY)
 
-#define TASK_DW_STACK_SIZE                 (2048/sizeof(portSTACK_TYPE))
+//#define TASK_DW_STACK_SIZE                 (2048/sizeof(portSTACK_TYPE))
+#define TASK_DW_STACK_SIZE                 (4096/sizeof(portSTACK_TYPE))
 #define TASK_DW_STACK_PRIORITY             (tskIDLE_PRIORITY)
 
 #define DELAY_1S							(1000 / portTICK_PERIOD_MS)
@@ -137,7 +138,7 @@
 #define DW_IRQ_MASK					PIO_PC0
 #define DW_IRQ_TYPE					PIO_INPUT
 #define DW_IRQ_ATTR					(PIO_IT_RISE_EDGE | PIO_DEFAULT)
+//#define DW_IRQ_ATTR					(PIO_IT_HIGH_LEVEL | PIO_DEFAULT)
 #define DW_IRQ_FLAGS				(DW_IRQ_TYPE | DW_IRQ_ATTR)
-
 
 #endif  // _CPH_BOARD_H

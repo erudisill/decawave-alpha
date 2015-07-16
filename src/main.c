@@ -87,14 +87,14 @@ int main(void) {
 	}
 
 	/* Create task for Decawave */
-//	if (xTaskCreate(task_decawave, "Decawave", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
-//		printf("Failed to create Decawave task\r\n");
-//	}
+	if (xTaskCreate(task_decawave, "Decawave", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
+		printf("Failed to create Decawave task\r\n");
+	}
 
 	/* Create task for Decawave Tests */
-	if (xTaskCreate(task_decawave_tests, "DW TESTS", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
-		printf("Failed to create DW TESTS task\r\n");
-	}
+//	if (xTaskCreate(task_decawave_tests, "DW TESTS", TASK_DW_STACK_SIZE, NULL, TASK_DW_STACK_PRIORITY, NULL) != pdPASS) {
+//		printf("Failed to create DW TESTS task\r\n");
+//	}
 
 	/* Create task for cheap CLI */
 	if (xTaskCreate(task_cli, "CLI", TASK_CLI_STACK_SIZE, NULL, TASK_CLI_STACK_PRIORITY, NULL) != pdPASS) {

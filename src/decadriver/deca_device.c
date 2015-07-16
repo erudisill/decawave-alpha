@@ -2166,7 +2166,7 @@ void dwt_setcallbacks(void (*txcallback)(const dwt_callback_data_t *), void (*rx
  *
  * no return value
  */
-#define DEBUGx 1
+#define DEBUGx 0
 
 void dwt_isr(void) // assume interrupt can supply context
 {
@@ -2201,10 +2201,10 @@ void dwt_isr(void) // assume interrupt can supply context
     //DEBUG ----- DEBUG ----- DEBUG -----
     status1 = dwt_read32bitoffsetreg(SYS_STATUS_ID, 1) ;            // read status register
     dwt_readfromdevice(RX_BUFFER_ID,0,2,buffer) ;
-    printf("status %02X%08X, byte 0 %02X%02X\n", status1>>24, status, buffer[0], buffer[1]);
+    printf("status %02X%08X, byte 0 %02X%02X\r\n", status1>>24, status, buffer[0], buffer[1]);
     states = dwt_read32bitreg(0x19) ;            // read status register
     states1 = dwt_read32bitoffsetreg(0x19, 1) ;            // read status register
-    printf("states %02X%08X\n", states1>>24, states);
+    printf("states %02X%08X\r\n", states1>>24, states);
 #endif
 
 	//fix for bug 622 - LDE done flag gets latched on a bad frame

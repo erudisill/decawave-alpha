@@ -205,7 +205,7 @@ void reportTOF(instance_data_t *inst)
             {
                 avg += inst->adist[i];
             }
-            avg /= inst->tofcount;
+            avg /= (double)inst->tofcount;
 
             inst_adist = avg ;
 

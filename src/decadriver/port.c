@@ -27,10 +27,15 @@ int NVIC_Configuration(void) {
 	pio_enable_interrupt(DW_IRQ_PIO, DW_IRQ_MASK);
 	// handler prototype:  void (*p_handler) (uint32_t, uint32_t)
 
-	NVIC_DisableIRQ(PIOC_IRQn);
-	NVIC_ClearPendingIRQ(PIOC_IRQn);
-	NVIC_SetPriority(PIOC_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY); //TODO: Is this correct IRQ priority w/ FreeRTOS?
-	NVIC_EnableIRQ(PIOC_IRQn);
+//	NVIC_DisableIRQ(PIOC_IRQn);
+//	NVIC_ClearPendingIRQ(PIOC_IRQn);
+//	NVIC_SetPriority(PIOC_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY); //TODO: Is this correct IRQ priority w/ FreeRTOS?
+//	NVIC_EnableIRQ(PIOC_IRQn);
+
+	pio_handler_set_priority(DW_IRQ_PIO, PIOC_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+//	pio_handler_set_priority(DW_IRQ_PIO, PIOC_IRQn, 0);
+
+	pmc_enable_periph_clk(DW_IRQ_PIO_ID);
 
 	return 0;
 }

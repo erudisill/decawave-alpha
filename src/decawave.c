@@ -5,7 +5,7 @@
  *      Author: ericrudisill
  */
 
-#if 0
+#if 1
 
 
 #include <asf.h>
@@ -182,6 +182,32 @@ void addressconfigure(void)
 }
 #endif
 
+
+#include <string.h>
+#include <deca_regs.h>
+static uint8 buffer[40] = { 0, 0 };
+
+static void print_status(void) {
+	uint32 status = 0;
+	uint32 status1 = 0;
+
+	status = dwt_read32bitreg(SYS_STATUS_ID);
+	status1 = dwt_read32bitoffsetreg(SYS_STATUS_ID, 1);            // read status register
+	dwt_readfromdevice(RX_BUFFER_ID, 0, 2, buffer);
+	printf("MAIN status %02X %08X, byte 0 %02X%02X\r\n", status1 >> 24, status, buffer[0], buffer[1]);
+
+	memset(buffer, 0xaa, FS_CTRL_LEN);
+	dwt_readfromdevice(FS_CTRL_ID, 0, FS_CTRL_LEN, buffer);
+	printf("FS_PLLCFG %08X  FS_PLLTUNE %02X  FS_XTALT %02X\r\n", *((uint32_t*) &buffer[0x07]), (uint8_t) (buffer[0x0b]),
+			(uint8_t) (buffer[0x0e]));
+
+	status = dwt_read32bitoffsetreg(RF_CONF_ID, RF_STATUS_OFFSET);
+	printf("RF_STATUS %08X\r\n\r\n", status);
+}
+
+
+
+
 int decarangingmode(void)
 {
 	return use_dr_mode;
@@ -314,10 +340,19 @@ uint32 inittestapplication(void)
 }
 
 
+//void process_deca_irq(uint32_t id, uint32_t mask) {
+//	printf("deca_irq\r\n");
+//	do {
+//		instance_process_irq(0);
+//	} while (port_CheckEXT_IRQ() == 1);
+//}
+
+static volatile uint8_t irq_set = 0;
+
 void process_deca_irq(uint32_t id, uint32_t mask) {
-	do {
-		instance_process_irq(0);
-	} while (port_CheckEXT_IRQ() == 1);
+	pio_toggle_pin(LED_STATUS1_IDX);
+//	instance_process_irq(0);
+	irq_set = 0x01;
 }
 
 void process_dwRSTn_irq(uint32_t id, uint32_t mask) {
@@ -408,6 +443,15 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 
 	// main loop
 	while (1) {
+
+		//ERIC: Delay irq handling...will this work?
+		if (irq_set) {
+			do {
+				instance_process_irq(0);
+			} while (port_CheckEXT_IRQ() == 1);
+			irq_set = 0x00;
+		}
+
 		instance_run();
 
 		if (instancenewrange()) {
@@ -420,14 +464,14 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 			avg_result = instance_get_adist();
 			//set_rangeresult(range_result);
 
-			printf("LAST: %4.2f m   ");
+			printf("LAST: %4.2f m   ", range_result);
 #if (DR_DISCOVERY == 0)
 			if(instance_mode == ANCHOR)
-			printf("AVG8: %4.2 m", avg_result);
+			printf("AVG8: %4.2f m", avg_result);
 			else
 			printf("%llx", instance_get_anchaddr());
 #else
-			printf("AVG8: %4.2 m", avg_result);
+			printf("AVG8: %4.2f m\r\n", avg_result);
 #endif
 		}
 
@@ -463,6 +507,7 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 #endif
 							printf("%llX\r\n", instance_get_addr());
 						}
+//						print_status();
 					}
 
 				} else if (instanceanchorwaiting() == 2) {
