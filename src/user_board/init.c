@@ -61,7 +61,7 @@ void board_init(void)
 	pio_configure(PINS_CONSOLE_PIO, PINS_CONSOLE_TYPE, PINS_CONSOLE_MASK, PINS_CONSOLE_ATTR);
 #endif
 
-//	pio_configure(DW_CSn_PIO, DW_CSn_TYPE, DW_CSn_MASK, DW_CSn_ATTR);
+	pio_configure(DW_WAKEUP_PIO, DW_WAKEUP_TYPE, DW_WAKEUP_MASK, DW_WAKEUP_ATTR);
 	pio_configure(DW_RSTn_PIO, DW_RSTn_TYPE, DW_RSTn_MASK, DW_RSTn_ATTR);
 	pio_configure(DW_RSTSWn_PIO, DW_RSTSWn_TYPE, DW_RSTSWn_MASK, DW_RSTSWn_ATTR);
 

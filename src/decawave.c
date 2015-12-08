@@ -7,7 +7,6 @@
 
 #if 1
 
-
 #include <asf.h>
 #include <inttypes.h>
 #include <decawave.h>
@@ -21,145 +20,134 @@ int use_fast2wr = 0x00;
 int use_long_blink_delay = 0x00;
 int use_dr_mode = 0x02;  // Mode 3
 //uint8_t eui64[] = { 0xDE, 0xCA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
-uint8_t eui64[] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x02, 0xCA, 0xDE };
 
+uint8_t eui64[] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x02, 0xCA, 0xDE };
+//uint8_t eui64[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x02, 0xCA, 0xDE };
 
 int instance_anchaddr = 0; //0 = 0xDECA020000000001; 1 = 0xDECA020000000002; 2 = 0xDECA020000000003
-int instance_mode = ANCHOR;
-//int instance_mode = TAG;
+//int instance_mode = ANCHOR;
+int instance_mode = TAG;
 //int instance_mode = TAG_TDOA;
 //int instance_mode = LISTENER;
 int dr_mode = 0;
 
-typedef struct
-{
-    uint8 channel ;
-    uint8 prf ;
-    uint8 datarate ;
-    uint8 preambleCode ;
-    uint8 preambleLength ;
-    uint8 pacSize ;
-    uint8 nsSFD ;
-    uint16 sfdTO ;
-} chConfig_t ;
-
+typedef struct {
+	uint8 channel;
+	uint8 prf;
+	uint8 datarate;
+	uint8 preambleCode;
+	uint8 preambleLength;
+	uint8 pacSize;
+	uint8 nsSFD;
+	uint16 sfdTO;
+} chConfig_t;
 
 //Configuration for DecaRanging Modes (8 default use cases selectable by the switch S1 on EVK)
-chConfig_t chConfig[8] ={
-                    //mode 1 - S1: 7 off, 6 off, 5 off
-                    {
-                        2,              // channel
-                        DWT_PRF_16M,    // prf
-                        DWT_BR_110K,    // datarate
-                        3,             // preambleCode
-                        DWT_PLEN_1024,  // preambleLength
-                        DWT_PAC32,      // pacSize
-                        1,       // non-standard SFD
-                        (1025 + 64 - 32) //SFD timeout
-                    },
-                    //mode 2
-                    {
-                        2,              // channel
-                        DWT_PRF_16M,    // prf
-                        DWT_BR_6M8,    // datarate
-                        3,             // preambleCode
-                        DWT_PLEN_128,   // preambleLength
-                        DWT_PAC8,       // pacSize
-                        0,       // non-standard SFD
-                        (129 + 8 - 8) //SFD timeout
-                    },
-                    //mode 3
-                    {
-                        2,              // channel
-                        DWT_PRF_64M,    // prf
-                        DWT_BR_110K,    // datarate
-                        9,             // preambleCode
-                        DWT_PLEN_1024,  // preambleLength
-                        DWT_PAC32,      // pacSize
-                        1,       // non-standard SFD
-                        (1025 + 64 - 32) //SFD timeout
-                    },
-                    //mode 4
-                    {
-                        2,              // channel
-                        DWT_PRF_64M,    // prf
-                        DWT_BR_6M8,    // datarate
-                        9,             // preambleCode
-                        DWT_PLEN_128,   // preambleLength
-                        DWT_PAC8,       // pacSize
-                        0,       // non-standard SFD
-                        (129 + 8 - 8) //SFD timeout
-                    },
-                    //mode 5
-                    {
-                        5,              // channel
-                        DWT_PRF_16M,    // prf
-                        DWT_BR_110K,    // datarate
-                        3,             // preambleCode
-                        DWT_PLEN_1024,  // preambleLength
-                        DWT_PAC32,      // pacSize
-                        1,       // non-standard SFD
-                        (1025 + 64 - 32) //SFD timeout
-                    },
-                    //mode 6
-                    {
-                        5,              // channel
-                        DWT_PRF_16M,    // prf
-                        DWT_BR_6M8,    // datarate
-                        3,             // preambleCode
-                        DWT_PLEN_128,   // preambleLength
-                        DWT_PAC8,       // pacSize
-                        0,       // non-standard SFD
-                        (129 + 8 - 8) //SFD timeout
-                    },
-                    //mode 7
-                    {
-                        5,              // channel
-                        DWT_PRF_64M,    // prf
-                        DWT_BR_110K,    // datarate
-                        9,             // preambleCode
-                        DWT_PLEN_1024,  // preambleLength
-                        DWT_PAC32,      // pacSize
-                        1,       // non-standard SFD
-                        (1025 + 64 - 32) //SFD timeout
-                    },
-                    //mode 8
-                    {
-                        5,              // channel
-                        DWT_PRF_64M,    // prf
-                        DWT_BR_6M8,    // datarate
-                        9,             // preambleCode
-                        DWT_PLEN_128,   // preambleLength
-                        DWT_PAC8,       // pacSize
-                        0,       // non-standard SFD
-                        (129 + 8 - 8) //SFD timeout
-                    }
-};
+chConfig_t chConfig[8] = {
+//mode 1 - S1: 7 off, 6 off, 5 off
+		{ 2,              // channel
+				DWT_PRF_16M,    // prf
+				DWT_BR_110K,    // datarate
+				3,             // preambleCode
+				DWT_PLEN_1024,  // preambleLength
+				DWT_PAC32,      // pacSize
+				1,       // non-standard SFD
+				(1025 + 64 - 32) //SFD timeout
+		},
+		//mode 2
+		{ 2,              // channel
+				DWT_PRF_16M,    // prf
+				DWT_BR_6M8,    // datarate
+				3,             // preambleCode
+				DWT_PLEN_128,   // preambleLength
+				DWT_PAC8,       // pacSize
+				0,       // non-standard SFD
+				(129 + 8 - 8) //SFD timeout
+		},
+		//mode 3
+		{ 2,              // channel
+				DWT_PRF_64M,    // prf
+				DWT_BR_110K,    // datarate
+				9,             // preambleCode
+				DWT_PLEN_1024,  // preambleLength
+				DWT_PAC32,      // pacSize
+				1,       // non-standard SFD
+				(1025 + 64 - 32) //SFD timeout
+		},
+		//mode 4
+		{ 2,              // channel
+				DWT_PRF_64M,    // prf
+				DWT_BR_6M8,    // datarate
+				9,             // preambleCode
+				DWT_PLEN_128,   // preambleLength
+				DWT_PAC8,       // pacSize
+				0,       // non-standard SFD
+				(129 + 8 - 8) //SFD timeout
+		},
+		//mode 5
+		{ 5,              // channel
+				DWT_PRF_16M,    // prf
+				DWT_BR_110K,    // datarate
+				3,             // preambleCode
+				DWT_PLEN_1024,  // preambleLength
+				DWT_PAC32,      // pacSize
+				1,       // non-standard SFD
+				(1025 + 64 - 32) //SFD timeout
+		},
+		//mode 6
+		{ 5,              // channel
+				DWT_PRF_16M,    // prf
+				DWT_BR_6M8,    // datarate
+				3,             // preambleCode
+				DWT_PLEN_128,   // preambleLength
+				DWT_PAC8,       // pacSize
+				0,       // non-standard SFD
+				(129 + 8 - 8) //SFD timeout
+		},
+		//mode 7
+		{ 5,              // channel
+				DWT_PRF_64M,    // prf
+				DWT_BR_110K,    // datarate
+				9,             // preambleCode
+				DWT_PLEN_1024,  // preambleLength
+				DWT_PAC32,      // pacSize
+				1,       // non-standard SFD
+				(1025 + 64 - 32) //SFD timeout
+		},
+		//mode 8
+		{ 5,              // channel
+				DWT_PRF_64M,    // prf
+				DWT_BR_6M8,    // datarate
+				9,             // preambleCode
+				DWT_PLEN_128,   // preambleLength
+				DWT_PAC8,       // pacSize
+				0,       // non-standard SFD
+				(129 + 8 - 8) //SFD timeout
+		} };
 
 #if (DR_DISCOVERY == 0)
 //Tag address list
 uint64 tagAddressList[3] =
 {
-     0xDECA010000001001,         // First tag
-     0xDECA010000000002,         // Second tag
-     0xDECA010000000003          // Third tag
-} ;
+	0xDECA010000001001,         // First tag
+	0xDECA010000000002,// Second tag
+	0xDECA010000000003// Third tag
+};
 
 //Anchor address list
 uint64 anchorAddressList[ANCHOR_LIST_SIZE] =
 {
-     0xDECA020000000001 ,       // First anchor
-     0xDECA020000000002 ,       // Second anchor
-     0xDECA020000000003 ,       // Third anchor
-     0xDECA020000000004         // Fourth anchor
-} ;
+	0xDECA020000000001 ,       // First anchor
+	0xDECA020000000002 ,// Second anchor
+	0xDECA020000000003 ,// Third anchor
+	0xDECA020000000004// Fourth anchor
+};
 
 //ToF Report Forwarding Address
 uint64 forwardingAddress[1] =
 {
-     0xDECA030000000001
-} ;
-
+	0xDECA030000000001
+};
 
 // ======================================================
 //
@@ -167,21 +155,20 @@ uint64 forwardingAddress[1] =
 //
 void addressconfigure(void)
 {
-    instanceAddressConfig_t ipc ;
+	instanceAddressConfig_t ipc;
 
-    ipc.forwardToFRAddress = forwardingAddress[0];
-    ipc.anchorAddress = anchorAddressList[instance_anchaddr];
-    ipc.anchorAddressList = anchorAddressList;
-    ipc.anchorListSize = ANCHOR_LIST_SIZE ;
-    ipc.anchorPollMask = 0x1; //0x7;              // anchor poll mask
+	ipc.forwardToFRAddress = forwardingAddress[0];
+	ipc.anchorAddress = anchorAddressList[instance_anchaddr];
+	ipc.anchorAddressList = anchorAddressList;
+	ipc.anchorListSize = ANCHOR_LIST_SIZE;
+	ipc.anchorPollMask = 0x1; //0x7;              // anchor poll mask
 
-    ipc.sendReport = 1 ;  //1 => anchor sends TOF report to tag
-    //ipc.sendReport = 2 ;  //2 => anchor sends TOF report to listener
+	ipc.sendReport = 1;//1 => anchor sends TOF report to tag
+	//ipc.sendReport = 2 ;  //2 => anchor sends TOF report to listener
 
-    instancesetaddresses(&ipc);
+	instancesetaddresses(&ipc);
 }
 #endif
-
 
 #include <string.h>
 #include <deca_regs.h>
@@ -205,140 +192,135 @@ static void print_status(void) {
 	printf("RF_STATUS %08X\r\n\r\n", status);
 }
 
-
-
-
-int decarangingmode(void)
-{
+int decarangingmode(void) {
 	return use_dr_mode;
 }
 
-uint32 inittestapplication(void)
-{
-    uint32 devID ;
-    instanceConfig_t instConfig;
-    int i , result;
+uint32 inittestapplication(void) {
+	uint32 devID;
+	instanceConfig_t instConfig;
+	int i, result;
 
-    SPI_ConfigFastRate(SPI_BaudRatePrescaler_16);  //max SPI before PLLs configured is ~4M
+	SPI_ConfigFastRate(SPI_BaudRatePrescaler_16);  //max SPI before PLLs configured is ~4M
 
-    i = 10;
+	i = 10;
 
-    //this is called here to wake up the device (i.e. if it was in sleep mode before the restart)
-    devID = instancereaddeviceid() ;
-    printf("devID %08X\r\n", devID);
-    if(DWT_DEVICE_ID != devID) //if the read of devide ID fails, the DW1000 could be asleep
-    {
-        port_SPIx_clear_chip_select();  //CS low
-        Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
-        port_SPIx_set_chip_select();  //CS high
-        Sleep(7);
-        devID = instancereaddeviceid() ;
-        // SPI not working or Unsupported Device ID
-        if(DWT_DEVICE_ID != devID) {
-        	return(-1) ;
-        }
-        //clear the sleep bit - so that after the hard reset below the DW does not go into sleep
-        dwt_softreset();
-    }
+	//this is called here to wake up the device (i.e. if it was in sleep mode before the restart)
+	devID = instancereaddeviceid();
+	printf("devID %08X\r\n", devID);
+	//if the read of devide ID fails, the DW1000 could be asleep
+	if (DWT_DEVICE_ID != devID) {
+//		port_SPIx_clear_chip_select();  //CS low
+//		Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
+//		port_SPIx_set_chip_select();  //CS high
+//		Sleep(7);
 
-    //reset the DW1000 by driving the RSTn line low
-    reset_DW1000();
+		printf("asleep...wakeup!\r\n");
+		pio_set_pin_high(DW_WAKEUP_PIO_IDX);
+		Sleep(1);
+		pio_set_pin_low(DW_WAKEUP_PIO_IDX);
+		Sleep(7);
 
-    result = instance_init() ;
-    if (0 > result) return(-2) ; // Some failure has occurred
+		devID = instancereaddeviceid();
+		printf("devID %08X\r\n", devID);
+		// SPI not working or Unsupported Device ID
+		if (DWT_DEVICE_ID != devID) {
+			return (-1);
+		}
+		//clear the sleep bit - so that after the hard reset below the DW does not go into sleep
+		dwt_softreset();
+	}
 
-    SPI_ConfigFastRate(SPI_BaudRatePrescaler_4); //increase SPI to max
-    devID = instancereaddeviceid() ;
+	//reset the DW1000 by driving the RSTn line low
+	reset_DW1000();
 
-    if (DWT_DEVICE_ID != devID)   // Means it is NOT MP device
-    {
-        // SPI not working or Unsupported Device ID
-        return(-3) ;
-    }
+	result = instance_init();
+	if (0 > result)
+		return (-2); // Some failure has occurred
 
-    if(is_tag)
-    {
-        instance_mode = TAG;
-        led_on(LED_PC7);
-    }
-    else
-    {
-        instance_mode = ANCHOR;
+	SPI_ConfigFastRate(SPI_BaudRatePrescaler_4); //increase SPI to max
+	devID = instancereaddeviceid();
+	printf("devID %08X\r\n", devID);
+
+	if (DWT_DEVICE_ID != devID)   // Means it is NOT MP device
+			{
+		// SPI not working or Unsupported Device ID
+		return (-3);
+	}
+
+	if (is_tag) {
+		instance_mode = TAG;
+		led_on(LED_PC7);
+	} else {
+		instance_mode = ANCHOR;
 #if (DR_DISCOVERY == 1)
-        led_on(LED_PC6);
+		led_on(LED_PC6);
 #else
-        if(instance_anchaddr & 0x1)
-            led_on(LED_PC6);
+		if(instance_anchaddr & 0x1)
+		led_on(LED_PC6);
 
-        if(instance_anchaddr & 0x2)
-            led_on(LED_PC7);
+		if(instance_anchaddr & 0x2)
+		led_on(LED_PC7);
 #endif
-    }
+	}
 
-    instancesetrole(instance_mode) ;     // Set this instance role
+	instancesetrole(instance_mode);     // Set this instance role
 
-    if(use_fast2wr) //if fast ranging then initialise instance for fast ranging application
-    {
-        instance_init_f(instance_mode); //initialise Fast 2WR specific data
-        //when using fast ranging the channel config is either mode 2 or mode 6
-        //default is mode 2
-        dr_mode = decarangingmode();
+	if (use_fast2wr) //if fast ranging then initialise instance for fast ranging application
+	{
+		instance_init_f(instance_mode); //initialise Fast 2WR specific data
+		//when using fast ranging the channel config is either mode 2 or mode 6
+		//default is mode 2
+		dr_mode = decarangingmode();
 
-        if((dr_mode & 0x1) == 0)
-            dr_mode = 1;
-    }
-    else
-    {
-        instance_init_s(instance_mode);
-        dr_mode = decarangingmode();
-    }
+		if ((dr_mode & 0x1) == 0)
+			dr_mode = 1;
+	} else {
+		instance_init_s(instance_mode);
+		dr_mode = decarangingmode();
+	}
 
-    instConfig.channelNumber = chConfig[dr_mode].channel ;
-    instConfig.preambleCode = chConfig[dr_mode].preambleCode ;
-    instConfig.pulseRepFreq = chConfig[dr_mode].prf ;
-    instConfig.pacSize = chConfig[dr_mode].pacSize ;
-    instConfig.nsSFD = chConfig[dr_mode].nsSFD ;
-    instConfig.sfdTO = chConfig[dr_mode].sfdTO ;
-    instConfig.dataRate = chConfig[dr_mode].datarate ;
-    instConfig.preambleLen = chConfig[dr_mode].preambleLength ;
+	instConfig.channelNumber = chConfig[dr_mode].channel;
+	instConfig.preambleCode = chConfig[dr_mode].preambleCode;
+	instConfig.pulseRepFreq = chConfig[dr_mode].prf;
+	instConfig.pacSize = chConfig[dr_mode].pacSize;
+	instConfig.nsSFD = chConfig[dr_mode].nsSFD;
+	instConfig.sfdTO = chConfig[dr_mode].sfdTO;
+	instConfig.dataRate = chConfig[dr_mode].datarate;
+	instConfig.preambleLen = chConfig[dr_mode].preambleLength;
 
-    instance_config(&instConfig) ;                  // Set operating channel etc
+	instance_config(&instConfig);                  // Set operating channel etc
 
 #if (DR_DISCOVERY == 0)
-    addressconfigure() ;                            // set up initial payload configuration
+	addressconfigure();                            // set up initial payload configuration
 #endif
-    instancesettagsleepdelay(POLL_SLEEP_DELAY, BLINK_SLEEP_DELAY); //set the Tag sleep time
+	instancesettagsleepdelay(POLL_SLEEP_DELAY, BLINK_SLEEP_DELAY); //set the Tag sleep time
 
-    //if TA_SW1_2 is on use fast ranging (fast 2wr)
-    if(use_fast2wr)
-    {
-        //Fast 2WR specific config
-        //configure the delays/timeouts
-        instance_config_f();
-    }
-    else //use default ranging modes
-    {
-        // NOTE: this is the delay between receiving the blink and sending the ranging init message
-        // The anchor ranging init response delay has to match the delay the tag expects
-        // the tag will then use the ranging response delay as specified in the ranging init message
-        // use this to set the long blink response delay (e.g. when ranging with a PC anchor that wants to use the long response times != 150ms)
-        if(use_long_blink_delay)
-        {
-            instancesetblinkreplydelay(FIXED_LONG_BLINK_RESPONSE_DELAY);
-        }
-        else //this is for ARM to ARM tag/anchor (using normal response times 150ms)
-        {
-            instancesetblinkreplydelay(FIXED_REPLY_DELAY);
-        }
+	//if TA_SW1_2 is on use fast ranging (fast 2wr)
+	if (use_fast2wr) {
+		//Fast 2WR specific config
+		//configure the delays/timeouts
+		instance_config_f();
+	} else //use default ranging modes
+	{
+		// NOTE: this is the delay between receiving the blink and sending the ranging init message
+		// The anchor ranging init response delay has to match the delay the tag expects
+		// the tag will then use the ranging response delay as specified in the ranging init message
+		// use this to set the long blink response delay (e.g. when ranging with a PC anchor that wants to use the long response times != 150ms)
+		if (use_long_blink_delay) {
+			instancesetblinkreplydelay(FIXED_LONG_BLINK_RESPONSE_DELAY);
+		} else //this is for ARM to ARM tag/anchor (using normal response times 150ms)
+		{
+			instancesetblinkreplydelay(FIXED_REPLY_DELAY);
+		}
 
-        //set the default response delays
-        instancesetreplydelay(FIXED_REPLY_DELAY, 0);
-    }
+		//set the default response delays
+		instancesetreplydelay(FIXED_REPLY_DELAY, 0);
+	}
 
 //    return devID;
-    return 0;
+	return 0;
 }
-
 
 //void process_deca_irq(uint32_t id, uint32_t mask) {
 //	printf("deca_irq\r\n");
@@ -386,7 +368,6 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 	Sleep(1000);
 
 	port_DisableEXT_IRQ(); //disable ScenSor IRQ until we configure the device
-
 
 	printf("DECAWAVE  RANGE\r\n");
 
@@ -438,15 +419,21 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 		printf("AWAITING POLL\r\n");
 	}
 
-	port_EnableEXT_IRQ()
-	; //enable ScenSor IRQ before starting
+	port_EnableEXT_IRQ(); //enable ScenSor IRQ before starting
 
 	// main loop
 	while (1) {
 
 		//ERIC: Delay irq handling...will this work?
+		uint32_t bail = 0;
 		if (irq_set) {
 			do {
+				if (bail++ > 2000) {
+					printf("BAIL!\r\n");
+					Sleep(10);
+					for (;;) {
+					}
+				}
 				instance_process_irq(0);
 			} while (port_CheckEXT_IRQ() == 1);
 			irq_set = 0x00;
@@ -519,10 +506,9 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 }
 #endif
 
-
 #if 0
 static freertos_spi_if spi;
-uint8_t eui64[] = { 0xDE, 0xCA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+uint8_t eui64[] = {0xDE, 0xCA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
 void process_deca_irq(uint32_t id, uint32_t mask) {
 }
 
@@ -574,7 +560,5 @@ portTASK_FUNCTION(task_decawave, pvParameters) {
 	}
 }
 #endif
-
-
 
 #endif

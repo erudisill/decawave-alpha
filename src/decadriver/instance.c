@@ -190,6 +190,7 @@ int instancesendpacket(instance_data_t *inst, int delayedTx)
 //
 int testapprun_s(instance_data_t *inst, int message)
 {
+	//printf("instance_run state %d\r\n", inst->testAppState);
 
     switch (inst->testAppState)
     {
@@ -365,24 +366,33 @@ int testapprun_s(instance_data_t *inst, int message)
 #else
                 //wake up device from low power mode
                 //NOTE - in the ARM  code just drop chip select for 200us
-                port_SPIx_clear_chip_select();  //CS low
+//                port_SPIx_clear_chip_select();  //CS low
+
                 instance_data[0].dwIDLE = 0; //reset
 
                 setup_DW1000RSTnIRQ(1); //enable RSTn IRQ
 
+                printf("awake from state machine!!\r\n");
+                pio_set_pin_high(DW_WAKEUP_PIO_IDX);
+                Sleep(1);
+                pio_set_pin_low(DW_WAKEUP_PIO_IDX);
+                Sleep(7);
+
+
                 Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
-                port_SPIx_set_chip_select();  //CS high
+//                port_SPIx_set_chip_select();  //CS high
                 //Sleep(5);
 
                 //need to poll to check when the DW1000 is in IDLE, the CPLL interrupt is not reliable
                 while(instance_data[0].dwIDLE == 0); //wait for DW1000 to go to IDLE state RSTn pin to go high
+
 
                 setup_DW1000RSTnIRQ(0); //disable RSTn IRQ
                 //add ~ Sleep(80) to stabilise the XTAL
                 Sleep(85);
 #endif
                 //this is platform dependent - only program if DW EVK/EVB
-                dwt_setleds(1);
+//                dwt_setleds(1);
 
                 //MP bug - TX antenna delay needs reprogramming as it is not preserved
                 dwt_settxantennadelay(inst->txantennaDelay) ;
@@ -852,6 +862,7 @@ int testapprun_s(instance_data_t *inst, int message)
             {
                 case SIG_RX_BLINK :
                 {
+                	printf("SIG_RX_BLINK\r\n");
 					event_data_t* dw_event = instance_getevent(12); //get and clear this event
                     //printf("we got blink message from %08X\n", ( tagaddr& 0xFFFF));
                     if((inst->mode == LISTENER) || (inst->mode == ANCHOR))

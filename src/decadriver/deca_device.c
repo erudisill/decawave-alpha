@@ -2680,6 +2680,7 @@ int dwt_starttx(uint8 mode)
             // clear the "auto TX to sleep" bit
             dwt_entersleepaftertx(0);
             dw1000local.wait4resp = 0;
+            printf("tx failed!\r\n");
             retval = DWT_ERROR ;                                            // Failed !
 
         }

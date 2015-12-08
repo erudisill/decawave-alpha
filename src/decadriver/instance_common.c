@@ -427,7 +427,7 @@ int instance_init(void)
 	dwt_seteui(eui64);
 	Sleep(1);
 	dwt_geteui(eui64);
-	printf("eui: ");
+	printf("eui xxx: ");
 	printf("%02X ", eui64[0]);
 	printf("%02X ", eui64[1]);
 	printf("%02X ", eui64[2]);
@@ -1183,7 +1183,6 @@ int instance_run(void)
     int done = INST_NOT_DONE_YET;
     int message = instance_peekevent(); //get any of the received events from ISR
 
-
         while(done == INST_NOT_DONE_YET)
         {
             //int state = instance_data[instance].testAppState;
@@ -1221,7 +1220,7 @@ int instance_run(void)
 			dw_event.rxLength = 0;
 			dw_event.type = DWT_SIG_RX_TIMEOUT;
 			dw_event.type2 = 0x80 | DWT_SIG_RX_TIMEOUT;
-			//printf("PC timeout DWT_SIG_RX_TIMEOUT\n");
+//			printf("PC timeout DWT_SIG_RX_TIMEOUT\r\n");
 			instance_putevent(dw_event);
         }
     	//END COMMENT FOR TO DO
@@ -1235,10 +1234,17 @@ void instance_close(void)
 {
     //wake up device from low power mode
     //NOTE - in the ARM  code just drop chip select for 200us
-    port_SPIx_clear_chip_select();  //CS low
-    Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
-    port_SPIx_set_chip_select();  //CS high
-    Sleep(5);
+//    port_SPIx_clear_chip_select();  //CS low
+//    Sleep(1);   //200 us to wake up then waits 5ms for DW1000 XTAL to stabilise
+//    port_SPIx_set_chip_select();  //CS high
+//    Sleep(5);
+
+	printf("asleep...wakeup!\r\n");
+	pio_set_pin_high(DW_WAKEUP_PIO_IDX);
+	Sleep(1);
+	pio_set_pin_low(DW_WAKEUP_PIO_IDX);
+	Sleep(7);
+
     dwt_entersleepaftertx(0); // clear the "enter deep sleep after tx" bit
 
     dwt_setinterrupt(0xFFFFFFFF, 0); //don't allow any interrupts

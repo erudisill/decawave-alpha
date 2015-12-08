@@ -6,6 +6,10 @@
 #include "exceptions.h"
 #include "pio.h"
 
+//#define REV_A_02
+#define REV_A_03
+
+
 /** Board oscillator settings */
 #define BOARD_FREQ_SLCK_XTAL        (32768U)
 #define BOARD_FREQ_SLCK_BYPASS      (32768U)
@@ -96,9 +100,24 @@
 #define DW_SPI_BAUD_SLOW			1000000UL
 #define DW_SPI						SPI
 #define DW_SPI_MAX_BLOCK_TIME 		(50 / portTICK_RATE_MS)
+
+#if defined(REV_A_02)
+#define DW_CSn_PIO_IDX				PIO_PC4_IDX
+#define DW_CSn_PIO_PERIPH			PIO_PERIPH_B
 #define DW_CHIP_SELECT				1
 #define DW_CHIP_SELECT_VALUE		0x0001
 #define DW_NONE_CHIP_SELECT_VALUE   0x0f
+#elif defined(REV_A_03)
+#define DW_CSn_PIO_IDX				PIO_PA30_IDX
+#define DW_CSn_PIO_PERIPH			PIO_PERIPH_B
+#define DW_CHIP_SELECT				2
+#define DW_CHIP_SELECT_VALUE		0x03
+#define DW_NONE_CHIP_SELECT_VALUE   0x0f
+#else
+error Undefined refision.
+#endif
+
+
 //#define DW_DELAY_BEFORE				0x40
 //#define DW_DELAY_BETWEEN			0x10
 #define DW_DELAY_BEFORE				0x00
@@ -107,13 +126,13 @@
 #define DW_CLOCK_PHASE				1
 //#define DW_CLOCK_PHASE				0
 
-// Decawave CSn (maybe not used??)
-#define DW_CSn_PIO				PIOC
-#define DW_CSn_PIO_IDX			PIO_PC9_IDX
-#define DW_CSn_MASK				PIO_PC9
-#define DW_CSn_TYPE				PIO_OUTPUT_1
-#define DW_CSn_ATTR				(PIO_DEFAULT)
 
+// Decawave WAKEUP
+#define DW_WAKEUP_PIO				PIOC
+#define DW_WAKEUP_PIO_IDX			PIO_PC7_IDX
+#define DW_WAKEUP_MASK				PIO_PC7
+#define DW_WAKEUP_TYPE				PIO_OUTPUT_0
+#define DW_WAKEUP_ATTR				(PIO_DEFAULT)
 
 // Decawave RSTn - input, no pull up/down
 #define DW_RSTn_PIO					PIOC
@@ -132,10 +151,22 @@
 #define DW_RSTSWn_ATTR				(PIO_DEFAULT)
 
 // Decawave IRQ
+#if defined(REV_A_02)
 #define DW_IRQ_PIO					PIOC
 #define DW_IRQ_PIO_ID				ID_PIOC
 #define DW_IRQ_IDX					PIO_PC0_IDX
 #define DW_IRQ_MASK					PIO_PC0
+#define DW_IRQ_IRQ					PIOC_IRQn
+#elif defined(REV_A_03)
+#define DW_IRQ_PIO					PIOA
+#define DW_IRQ_PIO_ID				ID_PIOA
+#define DW_IRQ_IDX					PIO_PA20_IDX
+#define DW_IRQ_MASK					PIO_PA20
+#define DW_IRQ_IRQ					PIOA_IRQn
+#else
+#error Unknown revision.
+#endif
+
 #define DW_IRQ_TYPE					PIO_INPUT
 #define DW_IRQ_ATTR					(PIO_IT_RISE_EDGE | PIO_DEFAULT)
 //#define DW_IRQ_ATTR					(PIO_IT_HIGH_LEVEL | PIO_DEFAULT)

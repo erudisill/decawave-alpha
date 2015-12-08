@@ -32,7 +32,8 @@ int NVIC_Configuration(void) {
 //	NVIC_SetPriority(PIOC_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY); //TODO: Is this correct IRQ priority w/ FreeRTOS?
 //	NVIC_EnableIRQ(PIOC_IRQn);
 
-	pio_handler_set_priority(DW_IRQ_PIO, PIOC_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+//	pio_handler_set_priority(DW_IRQ_PIO, PIOC_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+	pio_handler_set_priority(DW_IRQ_PIO, DW_IRQ_IRQ, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
 //	pio_handler_set_priority(DW_IRQ_PIO, PIOC_IRQn, 0);
 
 	pmc_enable_periph_clk(DW_IRQ_PIO_ID);
@@ -72,7 +73,8 @@ void * SPI_Configuration(void) {
 		pio_configure_pin(PIO_PA12_IDX, PIO_PERIPH_A);	// MISO
 		pio_configure_pin(PIO_PA13_IDX, PIO_PERIPH_A);	// MOSI
 		pio_configure_pin(PIO_PA14_IDX, PIO_PERIPH_A);	// SPCK
-		pio_configure_pin(PIO_PC4_IDX, PIO_PERIPH_B);	// NPCS1
+//		pio_configure_pin(PIO_PC4_IDX, PIO_PERIPH_B);	// NPCS1
+		pio_configure_pin(DW_CSn_PIO_IDX, DW_CSn_PIO_PERIPH);
 		pmc_enable_periph_clk(ID_SPI);
 
 		spi_disable(DW_SPI);
@@ -117,8 +119,12 @@ void setup_DW1000RSTnIRQ(int enable) {
 		NVIC_ClearPendingIRQ(PIOC_IRQn);
 		NVIC_SetPriority(PIOC_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY);//TODO: Is this correct IRQ priority w/ FreeRTOS?
 		NVIC_EnableIRQ(PIOC_IRQn);
+
+		pmc_enable_periph_clk(DW_RSTn_PIO_ID);
+
 	} else {
 		// Back to normal input pin (tri-state, no pull up/down)
+		pio_disable_interrupt(DW_RSTn_PIO, DW_RSTn_MASK);
 		pio_configure(DW_RSTn_PIO, DW_RSTn_TYPE, DW_RSTn_MASK, DW_RSTn_ATTR);
 	}
 }
