@@ -107,3 +107,70 @@ int main(void) {
 	/* Will only get here if there was insufficient memory to create the idle task. */
 	return 0;
 }
+
+
+
+#if 0
+int main(void) {
+	sysclk_init();
+	board_init();
+
+	configure_console();
+
+	/* Output demo infomation. */
+	printf("\r\n-- Decawave SPI TEST --\n\r");
+
+	spi_set_master_mode(DW_SPI);
+
+	pio_configure_pin(PIO_PA12_IDX, PIO_PERIPH_A);	// MISO
+	pio_configure_pin(PIO_PA13_IDX, PIO_PERIPH_A);	// MOSI
+	pio_configure_pin(PIO_PA14_IDX, PIO_PERIPH_A);	// SPCK
+	pio_configure_pin(DW_CSn_PIO_IDX, DW_CSn_PIO_PERIPH);
+	pmc_enable_periph_clk(ID_SPI);
+
+	spi_disable(DW_SPI);
+	spi_set_clock_polarity(DW_SPI, DW_CHIP_SELECT, DW_CLOCK_POLARITY);
+	spi_set_clock_phase(DW_SPI, DW_CHIP_SELECT, DW_CLOCK_PHASE);
+	spi_set_baudrate_div(DW_SPI, DW_CHIP_SELECT, (sysclk_get_cpu_hz() / DW_SPI_BAUD_SLOW));
+	spi_set_transfer_delay(DW_SPI, DW_CHIP_SELECT, DW_DELAY_BEFORE,		DW_DELAY_BETWEEN);
+	spi_configure_cs_behavior(DW_SPI, DW_CHIP_SELECT, SPI_CS_RISE_NO_TX);
+	spi_set_peripheral_chip_select_value(DW_SPI, DW_CHIP_SELECT_VALUE);
+
+	spi_enable(DW_SPI);
+
+	uint8_t pcs = DW_CHIP_SELECT;
+	uint16_t data = 0;
+	uint8_t buff[5];
+
+	spi_set_peripheral_chip_select_value(DW_SPI, (~(1U << DW_CHIP_SELECT)));
+
+
+	spi_write(DW_SPI, 0, pcs, 0);
+	spi_read(DW_SPI, &data,&pcs);
+	buff[0] = data & 0xFF;
+
+	spi_write(DW_SPI, 0xFF, pcs, 0);
+	spi_read(DW_SPI, &data,&pcs);
+	buff[1] = data & 0xFF;
+
+	spi_write(DW_SPI, 0xFF, pcs, 0);
+	spi_read(DW_SPI, &data,&pcs);
+	buff[2] = data & 0xFF;
+
+	spi_write(DW_SPI, 0xFF, pcs, 0);
+	spi_read(DW_SPI, &data,&pcs);
+	buff[3] = data & 0xFF;
+
+	spi_write(DW_SPI, 0xFF, pcs, 1);
+	spi_read(DW_SPI, &data,&pcs);
+	buff[4] = data & 0xFF;
+
+	spi_set_peripheral_chip_select_value(DW_SPI, DW_NONE_CHIP_SELECT_VALUE);
+
+
+	printf("returned %02X%02X%02X%02X\r\n", buff[1], buff[2], buff[3], buff[4]);
+
+	while (1) ;
+
+}
+#endif
